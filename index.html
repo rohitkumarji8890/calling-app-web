@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CallCoin</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1120">
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1120;
+    --surface: #131B2E;
+    --surface-2: #1B2540;
+    --accent: #00D9C0;
+    --accent-dim: #0F3D3E;
+    --coin: #FFB454;
+    --text: #F1F5F9;
+    --text-muted: #8B95A7;
+    --danger: #FF6B6B;
+    --border: #232D45;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* ---------- Screens ---------- */
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ---------- Login ---------- */
+  #screen-login {
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ring-decor {
+    position: absolute;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 360px;
+    z-index: 1;
+  }
+  .login-logo {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(160deg, var(--accent-dim), var(--surface-2));
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+  }
+  .login-logo svg { width: 26px; height: 26px; }
+  .login-title {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+  .login-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+  .field {
+    margin-bottom: 16px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .field input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--accent); }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 15px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #06201E; }
+  .btn-primary:disabled { opacity: 0.5; }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+
+  .error-box {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: var(--danger);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  /* ---------- Header (dashboard) ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+  }
+  .topbar .who { font-size: 13px; color: var(--text-muted); }
+  .topbar .name { font-size: 16px; font-weight: 600; }
+  .logout-btn {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 13px; cursor: pointer; padding: 8px;
+  }
+
+  /* ---------- Wallet card ---------- */
+  .wallet-card {
+    margin: 0 20px 20px;
+    padding: 24px;
+    border-radius: 18px;
+    background: linear-gradient(150deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .wallet-card::after {
+    content: '';
+    position: absolute;
+    top: -40%; right: -20%;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,217,192,0.12), transparent 70%);
+  }
+  .wallet-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .wallet-coins {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--coin);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .wallet-coins .unit { font-size: 16px; color: var(--text-muted); font-family: 'Inter', sans-serif; font-weight: 500; }
+  .wallet-rates {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .wallet-rates span b { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- Dialer ---------- */
+  .dialer-section { padding: 0 20px; flex: 1; }
+  .section-title {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .call-type-toggle {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+  }
+  .call-type-toggle button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px;
+    border-radius: 7px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .call-type-toggle button.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .number-input-wrap {
+    margin-bottom: 20px;
+  }
+  .number-input-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+    outline: none;
+    text-align: center;
+  }
+  .number-input-wrap input:focus { border-color: var(--accent); }
+
+  .callerid-select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 20px;
+    outline: none;
+  }
+
+  .call-btn-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 28px;
+    position: relative;
+  }
+  .call-btn {
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 0 0 rgba(0, 217, 192, 0.5);
+    animation: pulse-ring 2.5s infinite;
+    position: relative;
+    z-index: 1;
+  }
+  .call-btn svg { width: 30px; height: 30px; }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(0, 217, 192, 0.4); }
+    70% { box-shadow: 0 0 0 18px rgba(0, 217, 192, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 217, 192, 0); }
+  }
+  .call-btn:disabled { background: var(--surface-2); animation: none; }
+
+  .estimate-text {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: -8px;
+    margin-bottom: 8px;
+    min-height: 16px;
+  }
+
+  /* ---------- History ---------- */
+  .history-section { padding: 0 20px 24px; }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-left .num { font-family: 'JetBrains Mono', monospace; font-size: 14px; }
+  .history-left .meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .history-coins { font-family: 'JetBrains Mono', monospace; color: var(--danger); font-size: 13px; }
+  .empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 24px 0;
+  }
+
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav {
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .bottom-nav button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 14px 0 calc(14px + env(safe-area-inset-bottom));
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer;
+  }
+  .bottom-nav button.active { color: var(--accent); }
+  .bottom-nav svg { width: 20px; height: 20px; }
+
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    z-index: 50;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(6,32,30,0.3);
+    border-top-color: #06201E;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .spinner.show { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- LOGIN SCREEN -->
+  <div class="screen active" id="screen-login">
+    <div class="ring-decor" style="width:420px;height:420px;top:-120px;left:50%;transform:translateX(-50%);"></div>
+    <div class="ring-decor" style="width:300px;height:300px;top:-60px;left:50%;transform:translateX(-50%);"></div>
+    <div class="login-card">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00D9C0" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </div>
+      <div class="login-title brand">CallCoin</div>
+      <div class="login-sub">Apne account se login karo</div>
+      <div class="error-box" id="login-error"></div>
+      <div class="field">
+        <label>User ID</label>
+        <input type="text" id="login-userid" autocomplete="username" placeholder="jaise: customer1">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" id="login-btn">
+        <span class="spinner" id="login-spinner"></span>
+        <span id="login-btn-text">Login karo</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD / DIALER SCREEN -->
+  <div class="screen" id="screen-dashboard">
+    <div class="topbar">
+      <div>
+        <div class="who">Welcome back</div>
+        <div class="name" id="dash-userid">-</div>
+      </div>
+      <button class="logout-btn" id="logout-btn">Logout</button>
+    </div>
+
+    <div class="wallet-card">
+      <div class="wallet-label">Wallet balance</div>
+      <div class="wallet-coins"><span id="wallet-coins">0</span><span class="unit">coins</span></div>
+      <div class="wallet-rates">
+        <span>India: <b id="rate-india">-</b>/min</span>
+        <span>International: <b id="rate-intl">-</b>/min</span>
+      </div>
+    </div>
+
+    <div class="dialer-section">
+      <div class="section-title">Number dial karo</div>
+      <div class="call-type-toggle">
+        <button class="active" id="type-india" data-type="india">🇮🇳 India</button>
+        <button id="type-intl" data-type="international">🌍 International</button>
+      </div>
+      <div class="number-input-wrap">
+        <input type="tel" id="dial-number" placeholder="Number daalo">
+      </div>
+      <div class="estimate-text" id="estimate-text"></div>
+      <div class="call-btn-wrap">
+        <button class="call-btn" id="call-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#06201E" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="history-section">
+      <div class="section-title">Recent calls</div>
+      <div id="history-list">
+        <div class="empty-state">Koi call history nahi hai abhi</div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="active" data-nav="dialer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Dialer
+      </button>
+      <button data-nav="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        History
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ CONFIG ============
+const API_BASE = 'https://calling-app-backend-gcgx.onrender.com';
+
+// ============ STATE ============
+let state = {
+  token: localStorage.getItem('callcoin_token') || null,
+  user: JSON.parse(localStorage.getItem('callcoin_user') || 'null'),
+  callType: 'india'
+};
+
+// ============ HELPERS ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function apiCall(path, method = 'GET', body = null, auth = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth && state.token) headers['Authorization'] = 'Bearer ' + state.token;
+  const res = await fetch(API_BASE + path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Kuch galat ho gaya');
+  return data;
+}
+
+// ============ LOGIN ============
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const userId = document.getElementById('login-userid').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errBox = document.getElementById('login-error');
+  errBox.classList.remove('show');
+
+  if (!userId || !password) {
+    errBox.textContent = 'User ID aur password dono bharo';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const btnText = document.getElementById('login-btn-text');
+  const spinner = document.getElementById('login-spinner');
+  spinner.classList.add('show');
+  btnText.textContent = 'Login ho raha hai...';
+
+  try {
+    const data = await apiCall('/api/auth/login', 'POST', { userId, password }, false);
+    state.token = data.token;
+    state.user = data.user;
+    localStorage.setItem('callcoin_token', data.token);
+    localStorage.setItem('callcoin_user', JSON.stringify(data.user));
+    enterDashboard();
+  } catch (e) {
+    errBox.textContent = e.message;
+    errBox.classList.add('show');
+  } finally {
+    spinner.classList.remove('show');
+    btnText.textContent = 'Login karo';
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  state.token = null;
+  state.user = null;
+  localStorage.removeItem('callcoin_token');
+  localStorage.removeItem('callcoin_user');
+  document.getElementById('login-userid').value = '';
+  document.getElementById('login-password').value = '';
+  showScreen('screen-login');
+});
+
+// ============ DASHBOARD ============
+async function enterDashboard() {
+  document.getElementById('dash-userid').textContent = state.user.userId;
+  document.getElementById('wallet-coins').textContent = state.user.coins;
+  showScreen('screen-dashboard');
+  refreshBalance();
+  loadHistory();
+}
+
+async function refreshBalance() {
+  try {
+    const data = await apiCall('/api/wallet/balance');
+    document.getElementById('wallet-coins').textContent = data.coins;
+    state.user.coins = data.coins;
+    localStorage.setItem('callcoin_user', JSON.stringify(state.user));
+  } catch (e) {
+    if (e.message.includes('Token')) {
+      showToast('Session khatam ho gayi, dobara login karo');
+      document.getElementById('logout-btn').click();
+    }
+  }
+}
+
+async function loadHistory() {
+  try {
+    const logs = await apiCall('/api/wallet/my-call-history');
+    const list = document.getElementById('history-list');
+    if (!logs.length) {
+      list.innerHTML = '<div class="empty-state">Koi call history nahi hai abhi</div>';
+      return;
+    }
+    list.innerHTML = logs.slice(0, 20).map(log => `
+      <div class="history-item">
+        <div class="history-left">
+          <div class="num">${log.calledNumber}</div>
+          <div class="meta">${log.callType === 'india' ? '🇮🇳 India' : '🌍 International'} · ${new Date(log.createdAt).toLocaleDateString('en-IN')}</div>
+        </div>
+        <div class="history-coins">-${log.coinsDeducted}</div>
+      </div>
+    `).join('');
+  } catch (e) { /* ignore silently */ }
+}
+
+// call type toggle
+document.getElementById('type-india').addEventListener('click', () => setCallType('india'));
+document.getElementById('type-intl').addEventListener('click', () => setCallType('international'));
+
+function setCallType(type) {
+  state.callType = type;
+  document.getElementById('type-india').classList.toggle('active', type === 'india');
+  document.getElementById('type-intl').classList.toggle('active', type === 'international');
+  updateEstimate();
+}
+
+async function updateEstimate() {
+  try {
+    const data = await apiCall('/api/wallet/check-before-call', 'POST', { callType: state.callType });
+    document.getElementById('estimate-text').textContent =
+      `${data.perMinuteRate} coins/min · Tumhare paas ${data.currentCoins} coins hain`;
+    document.getElementById('rate-india').textContent = state.callType === 'india' ? data.perMinuteRate : document.getElementById('rate-india').textContent;
+  } catch (e) {}
+}
+
+// ============ CALL BUTTON ============
+document.getElementById('call-btn').addEventListener('click', async () => {
+  const number = document.getElementById('dial-number').value.trim();
+  if (!number) {
+    showToast('Pehle number daalo');
+    return;
+  }
+
+  const btn = document.getElementById('call-btn');
+  btn.disabled = true;
+
+  try {
+    // Check coins pehle
+    const check = await apiCall('/api/wallet/check-before-call', 'POST', { callType: state.callType });
+    if (!check.canCallOneMinute) {
+      showToast('Coins kam hain, pehle recharge karo');
+      btn.disabled = false;
+      return;
+    }
+
+    showToast('Call connect ho rahi hai... tumhare phone pe ring aayegi');
+
+    // Yaha real telephony provider (Exotel) ka "click to call" API backend se hoga.
+    // Abhi ke liye seedha tel: link se normal call trigger karte hain (testing ke liye).
+    // Jab Exotel setup hoga, isko backend API call se replace karenge.
+    window.location.href = 'tel:' + number;
+
+    // Call ke baad estimate refresh karo (asli deduction backend se Exotel callback ke time hoga)
+    setTimeout(() => {
+      refreshBalance();
+      loadHistory();
+    }, 3000);
+
+  } catch (e) {
+    showToast(e.message);
+  } finally {
+    setTimeout(() => { btn.disabled = false; }, 1500);
+  }
+});
+
+document.getElementById('dial-number').addEventListener('input', updateEstimate);
+
+// ============ BOTTOM NAV ============
+document.querySelectorAll('.bottom-nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (btn.dataset.nav === 'history') {
+      loadHistory();
+      document.getElementById('history-list').scrollIntoView({ behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+});
+
+// ============ INIT ============
+if (state.token && state.user) {
+  enterDashboard();
+} else {
+  showScreen('screen-login');
+}
+
+// ============ SERVICE WORKER ============
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
