@@ -422,6 +422,11 @@
       <div class="number-input-wrap">
         <input type="tel" id="dial-number" placeholder="Number daalo">
       </div>
+      <div class="number-input-wrap">
+        <select id="caller-id-select" style="width:100%; padding:14px; border-radius:12px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); font-size:15px;">
+          <option value="">Caller ID load ho raha hai...</option>
+        </select>
+      </div>
       <div class="estimate-text" id="estimate-text"></div>
       <div class="call-btn-wrap">
         <button class="call-btn" id="call-btn">
@@ -541,6 +546,23 @@ async function enterDashboard() {
   showScreen('screen-dashboard');
   refreshBalance();
   loadHistory();
+  loadCallerIds();
+}
+
+async function loadCallerIds() {
+  try {
+    const list = await apiCall('/api/wallet/caller-ids');
+    const select = document.getElementById('caller-id-select');
+    if (!list.length) {
+      select.innerHTML = '<option value="">Koi caller ID available nahi hai</option>';
+      return;
+    }
+    select.innerHTML = list.map(c =>
+      `<option value="${c.number}">${c.label ? c.label + ' - ' : ''}${c.number}</option>`
+    ).join('');
+  } catch (e) {
+    document.getElementById('caller-id-select').innerHTML = '<option value="">Caller ID load nahi ho payi</option>';
+  }
 }
 
 async function refreshBalance() {
@@ -600,8 +622,14 @@ async function updateEstimate() {
 // ============ CALL BUTTON ============
 document.getElementById('call-btn').addEventListener('click', async () => {
   const number = document.getElementById('dial-number').value.trim();
+  const callerId = document.getElementById('caller-id-select').value;
+
   if (!number) {
     showToast('Pehle number daalo');
+    return;
+  }
+  if (!callerId) {
+    showToast('Caller ID select karo');
     return;
   }
 
@@ -617,14 +645,15 @@ document.getElementById('call-btn').addEventListener('click', async () => {
       return;
     }
 
-    showToast('Call connect ho rahi hai... tumhare phone pe ring aayegi');
+    // Asli call trigger karo Exotel ke through backend se
+    const result = await apiCall('/api/wallet/initiate-call', 'POST', {
+      calledNumber: number,
+      callType: state.callType,
+      callerId: callerId
+    });
 
-    // Yaha real telephony provider (Exotel) ka "click to call" API backend se hoga.
-    // Abhi ke liye seedha tel: link se normal call trigger karte hain (testing ke liye).
-    // Jab Exotel setup hoga, isko backend API call se replace karenge.
-    window.location.href = 'tel:' + number;
+    showToast(result.message || 'Call trigger ho gayi! Tumhare phone pe ring aayegi');
 
-    // Call ke baad estimate refresh karo (asli deduction backend se Exotel callback ke time hoga)
     setTimeout(() => {
       refreshBalance();
       loadHistory();
